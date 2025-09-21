@@ -1,6 +1,6 @@
 # UK Accent Identification
 
-Machine learning models for analyzing speech and distinguishing between UK dialects and accents.
+Machine learning models for analysing speech and distinguishing between UK dialects and accents.
 
 ---
 
