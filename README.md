@@ -1,2 +1,2 @@
 # dialect-detect
-Machine learning models for analysing speech and distinguishing between UK dialects and accents.
+This project explores automatic dialect and accent recognition within varieties of English spoken in the UK. It uses open-source speech datasets (e.g., Common Voice, ABI, Speech Accent Archive) and modern deep learning methods (Wav2Vec2, XLS-R, CNNs on spectrograms) to build classifiers that distinguish between regional dialects such as Northern English, Southern English, Scottish English, Welsh English, and Irish English. The repository includes scripts for data preprocessing, model training, evaluation, and inference, along with example notebooks and reproducible experiments.
