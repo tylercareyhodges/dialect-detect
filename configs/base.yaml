@@ -1,1 +1,35 @@
+experiment_name: "wav2vec2_xlsr_baseline"
+
+paths:
+  train_csv: "data/processed/train.csv"
+  val_csv:   "data/processed/val.csv"
+  test_csv:  "data/processed/test.csv"
+  checkpoints_dir: "checkpoints"
+  reports_dir: "reports"
+  artifacts_dir: "artifacts"
+
+labels: ["Northern English","Southern English","Midlands English","Scottish English","Welsh English","Irish English"]
+
+audio:
+  sample_rate: 16000
+  max_seconds: 5         # random crop during training, centre crop at eval
+  mono: true
+
+model:
+  backbone_name: "facebook/wav2vec2-large-xlsr-53"
+  freeze_backbone: true
+  hidden_dim: 256
+  dropout: 0.2
+
+training:
+  batch_size: 8
+  num_workers: 2
+  lr: 3.0e-5
+  weight_decay: 0.01
+  epochs: 8
+  grad_accum_steps: 1
+  seed: 42
+  class_balance: "weights"   # "none" | "weights"
+  device: "auto"             # "auto" | "cpu" | "cuda"
+  early_stop_patience: 3
 
