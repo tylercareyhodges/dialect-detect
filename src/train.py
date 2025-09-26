@@ -10,8 +10,10 @@ from tqdm import tqdm
 from sklearn.metrics import accuracy_score, f1_score
 
 from .datasets import AudioDataset, build_label_mapping, compute_class_weights
-from .features import make_feature_extractor, collate_fn_factory
 from .model import Wav2Vec2Classifier
+
+from functools import partial
+from .features import make_feature_extractor, collate_fn
 
 
 def set_seed(seed: int):
@@ -107,11 +109,17 @@ def main(args):
 
     # Feature extractor + collate
     feat = make_feature_extractor(cfg["model"]["backbone_name"], cfg["audio"]["sample_rate"])
-    collate = collate_fn_factory(feat, label2id)
+    collate = partial(collate_fn, feat=feat, label2id=label2id)
 
     # Loaders
-    dl_train = DataLoader(ds_train, batch_size=cfg["training"]["batch_size"], shuffle=True,
-                          num_workers=cfg["training"]["num_workers"], collate_fn=collate, pin_memory=True)
+    pin = (device.type == "cuda")
+    dl_train = DataLoader(
+    ds_train,
+    batch_size=cfg["training"]["batch_size"],
+    shuffle=True,
+    num_workers=cfg["training"]["num_workers"],
+    collate_fn=collate
+    )
     dl_val = DataLoader(ds_val, batch_size=cfg["training"]["batch_size"], shuffle=False,
                         num_workers=cfg["training"]["num_workers"], collate_fn=collate, pin_memory=True)
 

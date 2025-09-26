@@ -21,15 +21,15 @@ class Wav2Vec2Classifier(nn.Module):
 
     def forward(self, input_values: torch.Tensor, attention_mask: torch.Tensor | None = None):
         # last_hidden_state: [B, T, H]
-        last_hidden = self.backbone(input_values=input_values, attention_mask=attention_mask).last_hidden_state
-        # mean pool over time with mask
-        if attention_mask is not None:
-            mask = attention_mask.unsqueeze(-1).type_as(last_hidden)  # [B, T, 1]
-            summed = (last_hidden * mask).sum(dim=1)
-            counts = mask.sum(dim=1).clamp(min=1e-6)
-            pooled = summed / counts
-        else:
-            pooled = last_hidden.mean(dim=1)
+        last_hidden = self.backbone(
+        input_values=input_values,
+        attention_mask=attention_mask
+        ).last_hidden_state
+
+        # simple mean pool over time
+        pooled = last_hidden.mean(dim=1)
+
         logits = self.classifier(pooled)  # [B, C]
         return logits
+
 

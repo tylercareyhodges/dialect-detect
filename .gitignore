@@ -1,24 +1,13 @@
-# Python
+# Ignore datasets
+data/
+*.mp3
+*.wav
+
+# Ignore Python cache
 __pycache__/
 *.pyc
-*.pyo
-*.pyd
-*.egg-info/
-.venv/
-.env
 
-# Data & outputs
-data/raw/
-data/processed/audio/
+# Ignore checkpoints/artifacts
 checkpoints/
 reports/
 artifacts/
-logs/
-
-# Jupyter
-.ipynb_checkpoints/
-
-# OS / IDE
-.DS_Store
-.vscode/
-

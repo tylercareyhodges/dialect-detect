@@ -8,28 +8,64 @@ paths:
   reports_dir: "reports"
   artifacts_dir: "artifacts"
 
+# Keep label order stable across runs
 labels: ["Northern English","Southern English","Midlands English","Scottish English","Welsh English","Irish English"]
 
 audio:
   sample_rate: 16000
-  max_seconds: 5         # random crop during training, centre crop at eval
+  max_seconds: 5       # random crop (train), centre crop (eval)
   mono: true
 
 model:
   backbone_name: "facebook/wav2vec2-large-xlsr-53"
   freeze_backbone: true
   hidden_dim: 256
-  dropout: 0.2
+  dropout: 0.4
 
 training:
-  batch_size: 8
-  num_workers: 2
-  lr: 3.0e-5
-  weight_decay: 0.01
-  epochs: 8
-  grad_accum_steps: 1
-  seed: 42
-  class_balance: "weights"   # "none" | "weights"
-  device: "auto"             # "auto" | "cpu" | "cuda"
-  early_stop_patience: 3
+  # Throughput
+  batch_size: 16
+  eval_batch_size: 32          # often safe to go bigger for eval
+  num_workers: 4               # set >0 for speed
+  prefetch_factor: 4           # only used if num_workers>0
+  persistent_workers: true     # keeps workers alive between epochs
+  drop_last: true              # stabler batch stats for train
 
+  # Optimizer / regularization
+  lr: 3.0e-5
+  weight_decay: 0.0001
+  grad_accum_steps: 1
+  grad_clip_norm: 1.0          # set 0 or null to disable
+  label_smoothing: 0.0         # 0.0–0.1 can help with imbalance
+
+  # Scheduler (optional: wire up later)
+  scheduler: "cosine"          # "none" | "cosine"
+  warmup_steps: 500
+  min_lr: 1.0e-6
+
+  # Schedule / early stopping
+  epochs: 30
+  early_stop_patience: 6
+  early_stop_min_delta: 0.001  # require small real improvement
+
+  # Repro / device
+  seed: 42
+  device: "auto"               # "auto" | "cpu" | "cuda" | "mps"
+  amp: false                   # true to enable mixed precision (CUDA)
+
+  # Imbalance handling
+  class_balance: "weights"     # "none" | "weights"
+  class_weight_strategy: "inverse"  # "inverse" | "sqrt_inverse"
+  class_weight_max: 5.0        # cap extreme weights
+  # If you prefer sampler instead of loss-weights:
+  use_weighted_sampler: false
+
+  # Checkpointing / monitoring
+  monitor_metric: "val_macro_f1"
+  monitor_mode: "max"
+  save_every_epochs: 0         # 0 = only save best
+  save_last: true              # also save last.pt
+
+  # Unfreezing plan (optional fine-tune)
+  unfreeze_after_epochs: 0     # 0 = keep frozen; set >0 to unfreeze later
+  unfreeze_last_n_layers: 0    # e.g., 6 to unfreeze top 6 transformer layers

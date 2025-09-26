@@ -11,8 +11,10 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 
 from .datasets import AudioDataset
-from .features import make_feature_extractor, collate_fn_factory
 from .model import Wav2Vec2Classifier
+
+from functools import partial
+from .features import make_feature_extractor, collate_fn
 
 
 @torch.no_grad()
@@ -22,14 +24,24 @@ def run_eval(cfg, checkpoint_path: str, split: str = "test"):
     # Load mapping from checkpoint (source of truth)
     ckpt = torch.load(checkpoint_path, map_location=device)
     label2id = ckpt["label2id"]; id2label = {int(k): v for k, v in ckpt["id2label"].items()}
+    
+    # pick a stable, explicit class order for reporting
+    label_ids = sorted(id2label.keys())  # e.g., [0,1,2,3,4,5]
+    target_names = [id2label[i] for i in label_ids]
 
+    # Dataset + loader
+    
     csv_path = cfg["paths"][f"{split}_csv"]
     ds = AudioDataset(csv_path, sample_rate=cfg["audio"]["sample_rate"], max_seconds=cfg["audio"]["max_seconds"], train=False)
     feat = make_feature_extractor(ckpt["backbone_name"], cfg["audio"]["sample_rate"])
-    collate = collate_fn_factory(feat, label2id)
-    dl = DataLoader(ds, batch_size=cfg["training"]["batch_size"], shuffle=False,
-                    num_workers=cfg["training"]["num_workers"], collate_fn=collate)
-
+    collate = partial(collate_fn, feat=feat, label2id=label2id)
+    dl = DataLoader(
+        ds,
+        batch_size=cfg["training"]["batch_size"],
+        shuffle=False,
+        num_workers=cfg["training"]["num_workers"],  # can be >0 now
+        collate_fn=collate
+    )
     model = Wav2Vec2Classifier(ckpt["backbone_name"], num_classes=len(label2id), freeze_backbone=False)
     model.load_state_dict(ckpt["state_dict"])
     model.to(device).eval()
@@ -48,19 +60,32 @@ def run_eval(cfg, checkpoint_path: str, split: str = "test"):
         ps.extend(preds.cpu().tolist())
 
     acc = accuracy_score(ys, ps)
-    f1 = f1_score(ys, ps, average="macro")
+    f1 = f1_score(ys, ps, average="macro", labels=label_ids, zero_division=0)
     print(f"{split}: loss {np.mean(losses):.4f} acc {acc:.4f} macroF1 {f1:.4f}")
     print("\nClassification report:\n")
-    print(classification_report(ys, ps, target_names=[id2label[i] for i in range(len(id2label))], digits=3))
+    print(classification_report(
+        ys, ps,
+        labels=label_ids,
+        target_names=target_names,
+        digits=3,
+        zero_division=0
+    ))
 
     # Save report + confusion matrix
     os.makedirs(cfg["paths"]["reports_dir"], exist_ok=True)
     report_txt = os.path.join(cfg["paths"]["reports_dir"], f"{split}_classification_report.txt")
     with open(report_txt, "w") as f:
-        f.write(classification_report(ys, ps, target_names=[id2label[i] for i in range(len(id2label))], digits=3))
+            f.write(classification_report(
+         ys, ps,
+          labels=label_ids,
+          target_names=target_names,
+          digits=3,
+          zero_division=0
+    ))
+
     print(f"Saved report → {report_txt}")
 
-    cm = confusion_matrix(ys, ps, labels=list(range(len(id2label))))
+    cm = confusion_matrix(ys, ps, labels=label_ids)
     fig = plt.figure(figsize=(6, 6))
     ax = fig.add_subplot(111)
     im = ax.imshow(cm, interpolation="nearest")

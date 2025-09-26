@@ -86,6 +86,6 @@ def compute_class_weights(train_df: pd.DataFrame, label2id: Dict[str, int]) -> t
     counts = counts.reindex(range(len(label2id)), fill_value=0).astype(float)
     total = counts.sum()
     # Inverse frequency normalised so average weight ≈ 1.0
-    weights = total / (len(counts) * counts.clip(min=1.0))
+    weights = total / (len(counts) * counts.clip(lower=1.0))
     return torch.tensor(weights.values, dtype=torch.float32)
 
