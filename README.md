@@ -4,13 +4,13 @@ A compact, modern machine‑learning project to analyse speech and distinguish b
 
 ---
 
-## ✨ What this gives you
+## What this gives you
 - Reproducible training/evaluation/inference scripts (PyTorch + Hugging Face).
 - Speaker‑disjoint splits and class‑imbalance handling.
 - Clear configuration via YAML.
 
 ---
 
-## 📦 Quick start
+## Quick start
 
 ...
